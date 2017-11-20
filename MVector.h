@@ -39,6 +39,15 @@ public:
 	double operator[](int index) const { return v[index]; }
 
 	int size() const { return v.size(); } // number of elements
+	void resize(int newsize) // change number of elements
+	{ 
+		v.resize(newsize); 
+	} 
+	void resize(int newsize, double value) // change number of elements and set entries to a value
+	{ 
+		v.resize(newsize);
+		for(int i=0;i<newsize;i++){v[i]=value;} 
+	} 
 
 	double LInfNorm() const
 	{
