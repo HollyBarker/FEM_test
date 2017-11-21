@@ -12,8 +12,8 @@
 class MVector
 {
 
-//Operator overload for <<
-friend std::ostream& operator<< (std::ostream& os, const MVector& output)
+//Operator overload for << like a  coordinate
+/*friend std::ostream& operator<< (std::ostream& os, const MVector& output)
 {
 	os<<"(";
 	for (int i=0;i<output.size()-1;i++)
@@ -21,6 +21,18 @@ friend std::ostream& operator<< (std::ostream& os, const MVector& output)
 		os<<output[i]<<",";
 	}
 	os<<output[output.size()-1]<<")";
+	return os;
+}*/
+
+//Operator overload for << like a col of values
+friend std::ostream& operator<< (std::ostream& os, const MVector& output)
+{
+	for (int i=0;i<output.size();i++)
+	{
+		os.precision(8);
+		os.width(12);
+		os<<output[i]<<std::endl;
+	}
 	return os;
 }
 

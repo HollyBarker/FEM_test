@@ -1,6 +1,7 @@
 #include<iostream>
 #include<vector>
 #include<cmath>
+#include<fstream>
 #include<algorithm>
 #include<iomanip>
 #include "MVector.h"
@@ -57,7 +58,7 @@ double phi2(double x) {return 0.5*(1+x);}
 double dphi1_ds() {return -0.5;}
 double dphi2_ds() {return 0.5;}
 
-double source_func(double x) {return 30*std::sin(5.5*x);}
+double source_func(double x) {return 30*std::sin(sqrt(30)*x);}
 
 int main()
 {
@@ -89,6 +90,7 @@ int main()
 	//Phase 1d
 	std::vector<double> U_initial_guess (no_nodes,0);
 	U_initial_guess[0]=0; U_initial_guess[no_nodes-1]=-1;
+	
 	
 	//Phase 1e
 	std::vector<double> eq_no_vec(no_nodes);
@@ -132,11 +134,12 @@ int main()
 	
 	//Initialising 
 	int n_dof,count=0;
-	double X_point=0.0,f_X_point=0.0, dX_ds_point=0.0, dU_ds_point=0.0, dU_dX_point=0.0, Jacobianxs=0.0, i_loc_eq_no, j_loc_eq_no;
+	double X_point=0.0,f_X_point=0.0, dX_ds_point=0.0, dU_ds_point=0.0, dU_dX_point=0.0, Jacobianxs=0.0, i_loc_eq_no, j_loc_eq_no, i_glob_eq_no, j_glob_eq_no;
 	double phi1_point=0.0, phi2_point=0.0, dphi1_dx_point=0.0, dphi2_dx_point=0.0, MULTIPLIER;
-	std::vector<double> global_residual_vec(glob_eq_no_vec.size(),0), U=U_initial_guess;
-	MVector element_residual_vec;
-	MMatrix global_Jacobian_matrix(glob_eq_no_vec.size(),glob_eq_no_vec.size(),0);
+	std::vector<double> U=U_initial_guess;
+	MVector element_residual_vec, glob_residual_vec(no_nodes-2,0);
+	MMatrix glob_Jacobian_matrix(no_nodes-2,no_nodes-2,0);
+	std::cout<<glob_residual_vec.size()<<std::endl;
 	
 	
 	for (int e=1;e<=no_elements;e++) //loop over the elements
@@ -182,12 +185,13 @@ int main()
 			
 			for (int j=1; j<=no_nodes_per_element;j++) //Loop over local nodes
 			{
-				glob_node_no=glob_node_no_func(j,e);
-				eq_no=eq_no_func(glob_node_no,no_nodes);
-				if (eq_no!=-1)
+				glob_node_no=glob_node_no_func(j,e); //Get global node number J(j,e)
+				eq_no=eq_no_func(glob_node_no,no_nodes); //Get the equation number for this node
+				if (eq_no!=-1) //If equaton no not equal to -1
 				{
-					i_loc_eq_no=loc_eq_no_func(j,e, no_nodes);
-					if (j==1)
+					i_loc_eq_no=loc_eq_no_func(j,e, no_nodes); //get local equation number of node L(j,e)
+					//Increment the residual vector:
+					if (j==1) 
 					{
 						element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi1_dx_point+f_X_point*phi1_point)*Jacobianxs*gauss_weight[i];
 					}
@@ -195,24 +199,41 @@ int main()
 					{
 						element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi2_dx_point+f_X_point*phi2_point)*Jacobianxs*gauss_weight[i];
 					}
-					for (int k=1;k<=no_nodes_per_element;k++)
+					for (int k=1;k<=no_nodes_per_element;k++) //Loop over local nodes
 					{
-						glob_node_no=glob_node_no_func(k,e);
-						eq_no=eq_no_func(glob_node_no,no_nodes);
-						if (eq_no!=-1)
+						glob_node_no=glob_node_no_func(k,e); //Get global node number J(k,e)
+						eq_no=eq_no_func(glob_node_no,no_nodes); //Get the eq number for this node
+						if (eq_no!=-1) // If eq no not -1
 						{
-							j_loc_eq_no=loc_eq_no_func(k,e,no_nodes);
+							j_loc_eq_no=loc_eq_no_func(k,e,no_nodes); //Get local eq no L(k,e)
+							//Get the correct dphi_k/dx*dphi_j/dx combo
 							if (j==1 && k==1){MULTIPLIER=dphi1_dx_point*dphi1_dx_point;}
 							else if (j==2 && k==2){MULTIPLIER=dphi2_dx_point*dphi2_dx_point;}
 							else {MULTIPLIER=dphi1_dx_point*dphi2_dx_point;}
+							//Increment the element Jacobian:
 							element_Jacobian_matrix(i_loc_eq_no-1,j_loc_eq_no-1)+=MULTIPLIER*Jacobianxs*gauss_weight[i];
 						}
 					}
 					
 				}
-			}	
+			}
+			
+			for(int i_dof=1; i_dof<=n_dof;i_dof++) //Loop over number of degrees of freedom for this element
+			{
+				i_glob_eq_no=glob_eq_no_func(i_dof,e,no_elements,no_nodes);
+				glob_residual_vec[i_glob_eq_no-1]+=element_residual_vec[i_dof-1];
+				std::cout<<glob_residual_vec.size()<<std::endl;
+				for (int j_dof=1; j_dof<=n_dof;j_dof++)
+				{
+					j_glob_eq_no=glob_eq_no_func(j_dof,e,no_elements,no_nodes);
+					
+					glob_Jacobian_matrix(i_glob_eq_no-1, j_glob_eq_no-1)+=element_Jacobian_matrix(i_dof-1,j_dof-1);
+					//std::cout<<i_glob_eq_no<<" , "<<j_glob_eq_no<<" , "<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
+				}
+			}
+				
 		}
-	std::cout<<"element= "<<e<<"res="<<element_residual_vec<<"Jac="<<std::endl<<element_Jacobian_matrix<<std::endl;
+	//std::cout<<"element= "<<e<<"res="<<element_residual_vec<<"Jac="<<std::endl<<element_Jacobian_matrix<<std::endl;
 	
 	
 	
@@ -222,7 +243,13 @@ int main()
 
 	}
 
-
-	
+//std::cout<<glob_residual_vec<<std::endl;
+//std::cout<<glob_Jacobian_matrix<<std::endl;
+	std::ofstream filenameres("glob_residual_vec.txt");
+	if(!filenameres){return 1;}
+	filenameres<<glob_residual_vec;
+	std::ofstream filenameJac("glob_Jacobian_matrix.txt");
+	if(!filenameJac){return 1;}
+	filenameJac<<glob_Jacobian_matrix;
 	return 0;
 }
