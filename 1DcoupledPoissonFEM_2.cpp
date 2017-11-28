@@ -20,7 +20,7 @@ int eq_no_func(int glob_node_no, int indep_var_no) //returns the eq number from 
 		std::cout<<"ERROR IN eq_no_func :: Global node number out of range."<<std::endl; 
 		exit(1);
 	}
-	else return glob_node_no*indep_var_no-1;
+	else return (indep_var_no-1)*(no_nodes-2)+glob_node_no-1;
 }
 
 int glob_node_no_func(int loc_node_no, int element_no) //returns the global node number from the local node number and element nnumber
@@ -32,7 +32,7 @@ int glob_eq_no_func(int local_eq_no, int element_no, int indep_var_no)
 {
 	if (element_no==1) return 1;
 	else if (element_no==no_elements) return no_nodes-2;
-	else return element_no*indep_var_no+local_eq_no-2;
+	else return ((indep_var_no-1)*no_elements)+element_no+local_eq_no-2;
 }
 
 int loc_eq_no_func(int loc_node_no, int element_no, int indep_var_no)
@@ -53,12 +53,12 @@ int loc_eq_no_func(int loc_node_no, int element_no, int indep_var_no)
 	return loc_eq_no;
 }
 
-int N_dof_func(element_no)
+int N_dof_func(int element_no)
 {
 	int j_dof=0;
 	for (int j=1;j<=no_nodes_per_element;j++)
 	{
-		int glob_node_no-glob_node_no_func(j,element_no);
+		int glob_node_no=glob_node_no_func(j,element_no);
 		int eq_no=eq_no_func(glob_node_no,1);//Gets the N_dof for the element which is the same for either u or v, so just ser indep_var_no=1	
 		if (eq_no!=-1) j_dof++;
 	}
@@ -112,41 +112,13 @@ int main()
 
 
 	//Phase 1f Loc eq no is a fucntion also. Might not need this whole thing
-	int j_dof,glob_node_no,eq_no;
-/*	std::vector<double> glob_eq_no_vec(no_elements*no_nodes_per_element,0),loc_eq_no_vec(no_elements*no_nodes_per_element,0), N_dof_vec(no_elements);
-	for (int e=1;e<=no_elements;e++)
-	{
-		j_dof=0;
-		for(int j=1; j<=no_nodes_per_element; j++)
-		{
-			glob_node_no=glob_node_no_func(j,e);
-			eq_no=eq_no_func(glob_node_no, indep_var_no);
-			if (eq_no!=-1)
-			{
-				j_dof++;
-				glob_eq_no_vec[(e-1)*no_nodes_per_element+j-1]=eq_no;
-				loc_eq_no_vec[(e-1)*no_nodes_per_element+j-1]=j_dof;
-			}
-			else loc_eq_no_vec[(e-1)*no_nodes_per_element+j-1]=-1;
-		}
-		N_dof_vec[e-1]=j_dof;
-	}*/ 
-
-//DONT THINK I NEED ANY OF THIS NOW
-
-
-	/*for (int i=0;i<no_elements*no_nodes_per_element;i++)
-	std::cout<<glob_eq_no_vec[i]<<" , "<<loc_eq_no_vec[i]<<std::endl;
-	for (int i=0; i<no_elements;i++) std::cout<<N_dof_vec[i]<<std::endl;
-	std::cout<<glob_eq_no_vec[199]<<" , "<<loc_eq_no_vec[199]<<std::endl;
-	std::cout<<glob_eq_no_vec[300]<<" , "<<loc_eq_no_vec.size()<<" , "<<N_dof_vec[105]<<std::endl;*/
 
 	//Phase2
 	//Phase 2a
 	
 	//Initialising 
-	int N_dof,count=0;
-	double X_point=0.0,f_X_point=0.0, dX_ds_point=0.0, dU_ds_point=0.0, dU_dX_point=0.0, Jacobianxs=0.0, i_loc_eq_no, j_loc_eq_no, i_glob_eq_no, j_glob_eq_no;
+	int N_dof,count=0, glob_node_no, eq_no;
+	double X_point=0.0,f_X_point=0.0, dX_ds_point=0.0, dU_ds_point=0.0, dU_dX_point=0.0, Jacobianxs=0.0, i_loc_eq_no, j_loc_eq_no, i_eq_no, j_eq_no;
 	double phi1_point=0.0, phi2_point=0.0, dphi1_dx_point=0.0, dphi2_dx_point=0.0, MULTIPLIER, v_point;
 	std::vector<double> U=U_initial_guess;
 	MVector element_residual_vec, glob_residual_vec((no_nodes-2)*2,0);
@@ -182,13 +154,13 @@ int main()
 				X_point+=X[glob_node_no-1]*phi1(gauss_position[i]); // This is finding X_{J(1,e)} * phi 1
 				dX_ds_point+=X[glob_node_no-1]*dphi1_ds(); // This is X_{(1,e)}* d phi_1/ds
 				dU_ds_point+=U[glob_node_no*indep_var_no-1]*dphi1_ds(); // This is U_{(1,e)}* d phi_1/ds
-				v_point+=U[glob_node_no*2]*phi1_point; // v_1 phi_1 at this node
+				v_point+=U[no_nodes-1+glob_node_no]*phi1_point; // v_1 phi_1 at this node
 
 				glob_node_no=glob_node_no_func(2,e); //This is the function J(2,e), the global node no for the second node of this element
 				X_point+=X[glob_node_no-1]*phi2(gauss_position[i]);
 				dX_ds_point+=X[glob_node_no-1]*dphi2_ds(); // This is X_{(2,e)}* d phi_2/ds
 				dU_ds_point+=U[glob_node_no*indep_var_no-1]*dphi2_ds(); // This is U_{(2,e)}* d phi_2/ds
-				v_point+=U[glob_node_no*2]*phi2_point; // v_2 phi_2 at this node
+				v_point+=U[no_nodes-1+glob_node_no]*phi2_point; // v_2 phi_2 at this node
 
 				dU_dX_point=(dU_ds_point)/(dX_ds_point); // This is dU/dx 
 				Jacobianxs=dX_ds_point; //This is the Jacobian J^=dx/ds
@@ -204,26 +176,29 @@ int main()
 				{
 					glob_node_no=glob_node_no_func(j,e); //Get global node number J(j,e)
 					eq_no=eq_no_func(glob_node_no, indep_var_no); //Get the equation number for this node
+					//std::cout<< glob_node_no<<" , "<<eq_no<<" , "<<glob_eq_no_func(j,e,indep_var_no)<<std::endl;
 					if (eq_no!=-1) //If equaton no not equal to -1
 					{
 						i_loc_eq_no=loc_eq_no_func(j,e, indep_var_no); //get local equation number of node L(j,e)
 						//Increment the residual vector:
+						//std::cout<<e<<" , "<<j<<" , "<<indep_var_no<<" , "<<i_loc_eq_no<<std::endl;
 						if (j==1 && indep_var_no==1)
 						{
 							element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi1_dx_point+v_point*phi1_point)*Jacobianxs*gauss_weight[i];
 						}
-						if (j==2 && indep_var_no==1)
+						else if (j==2 && indep_var_no==1)
 						{
 							element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi2_dx_point+v_point*phi2_point)*Jacobianxs*gauss_weight[i];
 						}
-						if (j==1 && indep_var_no==2) 
+						else if (j==1 && indep_var_no==2) 
 						{
 							element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi1_dx_point+f_X_point*phi1_point)*Jacobianxs*gauss_weight[i];
 						}
-						if (j==2 && indep_var_no==2)
+						else if (j==2 && indep_var_no==2)
 						{
 							element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi2_dx_point+f_X_point*phi2_point)*Jacobianxs*gauss_weight[i];
 						}
+						std::cout<<element_residual_vec[i_loc_eq_no-1]<<std::endl;
 						for (int k=1;k<=no_nodes_per_element;k++) //Loop over local nodes
 						{
 							glob_node_no=glob_node_no_func(k,e); //Get global node number J(k,e)
@@ -245,32 +220,40 @@ int main()
 			
 				for(int i_dof=1; i_dof<=N_dof;i_dof++) //Loop over number of degrees of freedom for this element
 				{
-					i_glob_eq_no=glob_eq_no_func(i_dof,e, indep_var_no);
-					glob_residual_vec[i_glob_eq_no-1]+=element_residual_vec[i_dof-1];
-					std::cout<<glob_residual_vec.size()<<std::endl;
-					for (int j_dof=1; j_dof<=N_dof;j_dof++)
+					i_eq_no=eq_no_func(glob_node_no_func(i_dof,e), indep_var_no);
+					if (i_eq_no!=-1)
 					{
-						j_glob_eq_no=glob_eq_no_func(j_dof,e, indep_var_no);
-					
-						glob_Jacobian_matrix(i_glob_eq_no-1, j_glob_eq_no-1)+=element_Jacobian_matrix(i_dof-1,j_dof-1);
-						//std::cout<<i_glob_eq_no<<" , "<<j_glob_eq_no<<" , "<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
+						glob_residual_vec[i_eq_no-1]+=element_residual_vec[i_dof-1];
+						//std::cout<<glob_residual_vec.size()<<std::endl;
+						for (int j_dof=1; j_dof<=N_dof;j_dof++)
+						{
+							j_eq_no=eq_no_func(glob_node_no_func(j_dof,e), indep_var_no);
+							if(j_eq_no!=-1)
+							{
+								glob_Jacobian_matrix(i_eq_no-1, j_eq_no-1)+=element_Jacobian_matrix(i_dof-1,j_dof-1);
+								//std::cout<<i_eq_no<<" , "<<j_eq_no<<" , "<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
+							}
+						}
 					}
 				}
+
 				
 			}
 		//std::cout<<"element= "<<e<<"res="<<element_residual_vec<<"Jac="<<std::endl<<element_Jacobian_matrix<<std::endl;
-	
-	
-	
-
-
-
 
 		}
 	}
 
-//std::cout<<glob_residual_vec<<std::endl;
-//std::cout<<glob_Jacobian_matrix<<std::endl;
+	for(int j=0;j<(no_nodes-2)*2;j++)
+	{
+		for (int k=0;k<(no_nodes-2)*2;k++)
+		{
+			if (k<(no_nodes-2) && j==k+(no_nodes-2)) glob_Jacobian_matrix(k,j)=1;
+		}
+	}
+
+std::cout<<glob_residual_vec.size()<<std::endl;
+std::cout<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
 	std::ofstream filenameres("glob_residual_vec.txt");
 	if(!filenameres){return 1;}
 	filenameres<<glob_residual_vec;
