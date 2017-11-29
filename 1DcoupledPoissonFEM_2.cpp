@@ -28,17 +28,15 @@ int glob_node_no_func(int loc_node_no, int element_no) //returns the global node
 	return element_no+loc_node_no-1;
 }
 
-int glob_eq_no_func(int local_eq_no, int element_no, int indep_var_no) //is only used in phase 2a. when (1,1,100,101) is put in, 1 is returned. but in phase 2a, this is what is wanted since we are looping over n_dof, instead of local_eq_no.
+int glob_eq_no_func(int loc_eq_no, int element_no, int indep_var_no) //is only used in phase 2a. when (1,1,1,1) is put in, 1 is returned. but in phase 2a, this is what is wanted since we are looping over n_dof, instead of local_eq_no.
 {
 	if (element_no==1 && indep_var_no==1) return 1;
 	else if (element_no==1 && indep_var_no==2) return 100;
-	else if (element_no==no_elements) return (no_nodes-2)*(indep_var_no);
+	else if (element_no==100 && indep_var_no==1) return 99;
+	else if (element_no==100 && indep_var_no==2) return 198;
 	if (indep_var_no==1) return element_no+loc_eq_no-2;
-	if (indep_var_no==2) return no_elements+element_no+local_eq_no-3;
+	else return no_elements+element_no+loc_eq_no-3;
 }
-
-//THINK THE LAST 2 BITS ARE OK WORK ON THE REST 
-//KEEP GOING
 
 int loc_eq_no_func(int loc_node_no, int element_no, int indep_var_no)
 {
@@ -114,8 +112,6 @@ int main()
 	//Phase 1e
 	//Eqn number is done by a function
 
-
-
 	//Phase 1f Loc eq no is a fucntion also. Might not need this whole thing
 
 	//Phase2
@@ -173,7 +169,7 @@ int main()
 				v_point+=U[no_nodes-1+glob_node_no]*phi1_point; // v_1 phi_1 at this node
 				v_point+=U[no_nodes-1+glob_node_no]*phi2_point; // v_2 phi_2 at this node
 
-				//std::cout<<count<<" , "<<X_point<<" , "<<dU_dX_point" , "<<dU_dX_point<<std::endl;
+
 				//when we look at this output, we have 300 points with x from 0 to 1, dU/dx is zero for all the points, except the last 3, which have 					-100. I think this is right because U first guess is 0 across the whole way and -1 at X=1 for the BC. With these shape 					functions, the gradient is 0 everywhere and -100 between 0.99 and 1.
 
 				f_X_point=source_func(X_point);
@@ -182,12 +178,10 @@ int main()
 				{
 					glob_node_no=glob_node_no_func(j,e); //Get global node number J(j,e)
 					eq_no=eq_no_func(glob_node_no, indep_var_no); //Get the equation number for this node
-					//std::cout<< glob_node_no<<" , "<<eq_no<<" , "<<glob_eq_no_func(j,e,indep_var_no)<<std::endl;
 					if (eq_no!=-1) //If equaton no not equal to -1
 					{
 						i_loc_eq_no=loc_eq_no_func(j,e, indep_var_no); //get local equation number of node L(j,e)
 						//Increment the residual vector:
-						//std::cout<<e<<" , "<<j<<" , "<<indep_var_no<<" , "<<i_loc_eq_no<<std::endl;
 						if (j==1 && indep_var_no==1)
 						{
 							element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi1_dx_point+v_point*phi1_point)*Jacobianxs*gauss_weight[i];
@@ -204,7 +198,6 @@ int main()
 						{
 							element_residual_vec[i_loc_eq_no-1]+=(dU_dX_point*dphi2_dx_point+f_X_point*phi2_point)*Jacobianxs*gauss_weight[i];
 						}
-						//std::cout<<element_residual_vec[i_loc_eq_no-1]<<std::endl;
 						for (int k=1;k<=no_nodes_per_element;k++) //Loop over local nodes
 						{
 							glob_node_no=glob_node_no_func(k,e); //Get global node number J(k,e)
@@ -225,44 +218,21 @@ int main()
 					
 					}
 				}
-				//std::cout<<N_dof<<std::endl;
-				//std::cout<<element_Jacobian_matrix<<std::endl;
+
 				for(int i_dof=1; i_dof<=N_dof;i_dof++) //Loop over number of degrees of freedom for this element
-				{
-					i_eq_no=eq_no_func(glob_node_no_func(i_dof,e), indep_var_no);
-					//std::cout<<i_eq_no<<std::endl;
-					std::cout<<glob_eq_no_func(i_dof,e,indep_var_no)<<std::endl;;
-					if (i_eq_no!=-1)
-					{
-						glob_residual_vec[i_eq_no-1]+=element_residual_vec[i_dof-1];
-						//std::cout<<glob_residual_vec.size()<<std::endl;
-						for (int j_dof=1; j_dof<=N_dof;j_dof++)
-						{
-							j_eq_no=eq_no_func(glob_node_no_func(j_dof,e), indep_var_no);
-							if(j_eq_no!=-1)
-							{
-								
-								glob_Jacobian_matrix(i_eq_no-1, j_eq_no-1)+=element_Jacobian_matrix(i_dof-1,j_dof-1);
-								//std::cout<<i_eq_no<<" , "<<j_eq_no<<" , "<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
-							}
-						}
-					}
-					
-					/*i_glob_eq_no=glob_eq_no_func(i_dof,e,indep_var_no);	
+				{	
+					i_glob_eq_no=glob_eq_no_func(i_dof,e,indep_var_no);	
 					glob_residual_vec[i_glob_eq_no-1]+=element_residual_vec[i_dof-1];
 					for (int j_dof=1; j_dof<=N_dof;j_dof++)
 					{
 						j_glob_eq_no=glob_eq_no_func(j_dof,e,indep_var_no);
 					
 						glob_Jacobian_matrix(i_glob_eq_no-1, j_glob_eq_no-1)+=element_Jacobian_matrix(i_dof-1,j_dof-1);
-						//std::cout<<i_glob_eq_no<<" , "<<j_glob_eq_no<<" , "<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
-					}*/
+					}
 				}
 
 				
 			}
-		//std::cout<<"element= "<<e<<"res="<<element_residual_vec<<"Jac="<<std::endl<<element_Jacobian_matrix<<std::endl;
-
 		}
 	}
 
@@ -274,8 +244,7 @@ int main()
 		}
 	}
 
-//std::cout<<glob_residual_vec.size()<<std::endl;
-//std::cout<<glob_Jacobian_matrix.Rows()<<" , "<<glob_Jacobian_matrix.Cols()<<std::endl;
+
 	std::ofstream filenameres("glob_residual_vec.txt");
 	if(!filenameres){return 1;}
 	filenameres<<glob_residual_vec;
