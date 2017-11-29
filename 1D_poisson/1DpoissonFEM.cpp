@@ -217,12 +217,14 @@ int main()
 					
 				}
 			}
-			
+			//std::cout<<n_dof<<std::endl;
+			//std::cout<<element_Jacobian_matrix<<std::endl;
 			for(int i_dof=1; i_dof<=n_dof;i_dof++) //Loop over number of degrees of freedom for this element
 			{
 				i_glob_eq_no=glob_eq_no_func(i_dof,e,no_elements,no_nodes);
+				std::cout<<i_glob_eq_no<<std::endl;
 				glob_residual_vec[i_glob_eq_no-1]+=element_residual_vec[i_dof-1];
-				std::cout<<glob_residual_vec.size()<<std::endl;
+				//std::cout<<glob_residual_vec.size()<<std::endl;
 				for (int j_dof=1; j_dof<=n_dof;j_dof++)
 				{
 					j_glob_eq_no=glob_eq_no_func(j_dof,e,no_elements,no_nodes);

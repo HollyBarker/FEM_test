@@ -256,7 +256,9 @@ int main()
 				}
 			}
 			
-			std::cout<<element_residual_vec_U<<std::endl;
+			//std::cout<<element_residual_vec_U<<std::endl;
+			std::cout<<N_dof<<std::endl;
+			std::cout<<element_Jacobian_matrix<<std::endl;
 			for(int i_dof=1; i_dof<=n_dof;i_dof++) //Loop over number of degrees of freedom for this element
 			{
 				i_glob_eq_no=glob_eq_no_func(i_dof,e,no_elements,no_nodes);
