@@ -241,9 +241,9 @@ int main()
 		for (int k=0;k<(no_nodes-2)*2;k++)
 		{
 			if (k<(no_nodes-2) && j==k+(no_nodes-2)) glob_Jacobian_matrix(k,j)=1;
+			
 		}
 	}
-
 
 	std::ofstream filenameres("glob_residual_vec.txt");
 	if(!filenameres){return 1;}
