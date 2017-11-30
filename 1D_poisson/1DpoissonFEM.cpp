@@ -26,7 +26,7 @@ int glob_node_no_func(int loc_node_no, int element_no) //returns the global node
 	return element_no+loc_node_no-1;
 }
 
-int glob_eq_no_func(int local_eq_no, int element_no, int no_elements, int no_nodes)
+int glob_eq_no_func(int local_eq_no, int element_no, int no_elements, int no_nodes) //is only used in phase 2a, when (1,1,100,101) is put in, 1 is returned. but in phase 2a, this is what is wanted since we are looping over n_dof, instead of local_eq_no.
 {
 	if (element_no==1) return 1;
 	else if (element_no==no_elements) return no_nodes-2;

@@ -19,7 +19,7 @@ friend std::ostream& operator<< (std::ostream& os, MMatrix A)
 		for (int j=0;j<A.Cols();j++)
 		{
 			os.precision(8);
-			os.width(12);os<<A(i,j);
+			os.width(15);os<<A(i,j);
 		}
 		os<<std::endl;
 	}

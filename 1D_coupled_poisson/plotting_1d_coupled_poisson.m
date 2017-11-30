@@ -1,21 +1,40 @@
-load('glob_Jacobian_matrix_U.txt'); %These need to be loaded after one iteration has already been performed
-load('glob_Jacobian_matrix_V.txt'); %already done with U_init is zeros and v_init zeros
-load('glob_residual_vec_U.txt');    %the solution for which is read into cpp file with readFile function
-load('glob_residual_vec_V.txt'); %after pasting the new u and v into a txt file
+load('glob_Jacobian_matrix.txt')
+load('glob_residual_vec.txt')
 
-U_init=load('U_vector2.txt'); %Sould be the resultant after 1 iteration already completed
-V_init=load('V_vector2.txt');
+U_init=[zeros(1,198)];
+
+Y=-transpose(glob_Jacobian_matrix\glob_residual_vec);
+
+
+lilJac=glob_Jacobian_matrix(100:198,100:198);
+lilres=glob_residual_vec(100:198);
+lilY=-transpose(lilJac\lilres);
+
+v_init=zeros(1,99);
+v_new=v_init+lilY;
+
+U_new=U_init+Y;
+
+u_new=[0,U_new(1:99),1];
+v_new=[0,v_new,-1];
+
 X_guess=0:0.01:1;
 
-YU=-transpose(glob_Jacobian_matrix_U\glob_residual_vec_U);
-YV=-transpose(glob_Jacobian_matrix_V\glob_residual_vec_V);
+u_exact=(sin(sqrt(30))-1).*X_guess.^3./6+(1/30)*sin(sqrt(30).*X_guess)+(7/6-1/5*sin(sqrt(30)))*X_guess;
+v_exact=(sin(sqrt(30))-1).*X_guess-sin(sqrt(30).*X_guess);
 
-U_new=U_init+YU;
-V_new=V_init+YV;
+[valu,indexu]=max(abs(u_exact-u_new));
+max_pc_differenceu=abs((valu*100)/u_exact(indexu));
 
-U_new=[0,U_new,1];
-V_new=[0,V_new,-1];
+[valv,indexv]=max(abs(v_exact-v_new));
+max_pc_differencev=abs((valv*100)/v_exact(indexv));
 
-plot(X_guess,U_new,'b');
-hold on
-plot(X_guess,V_new,'r');
+
+
+plot(X_guess,u_new,'m*')
+hold on 
+plot(X_guess,v_new,'r*')
+plot(X_guess,u_exact,'g')
+plot(X_guess,v_exact,'k')
+
+title(['maximum percentage difference is ',num2str(max_pc_differenceu),'% [u] and ',num2str(max_pc_differencev),'% [v]'])
